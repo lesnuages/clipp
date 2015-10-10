@@ -196,7 +196,7 @@ class ClippConsole(BaseConsole):
     def __init__(self):
         BaseConsole.__init__(self)
         self.analyzer = PcapAnalyzer()
-        self.config = {'mobile': False, 'prod' : False}
+        self.config = {'mobile': False, 'ip-layer' : False}
         self.current_session = None
 
     def do_clean(self, args):
@@ -216,7 +216,7 @@ class ClippConsole(BaseConsole):
         """
         try:
             self.analyzer.set_filepath(args['<filename>'])
-            self.analyzer.parse_file(self.config['mobile'], self.config.get('prod', False))
+            self.analyzer.parse_file(self.config['mobile'], self.config.get('ip-layer', False))
         except Exception as e:
             print(e)
 

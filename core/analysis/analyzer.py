@@ -62,16 +62,16 @@ class PcapAnalyzer():
         """
         self.filepath = filepath
 
-    def parse_file(self, mobile=False, prod=False):
+    def parse_file(self, mobile=False, ip_layer=False):
         """
         Parse the input file.
         """
         with open(self.filepath) as pcap_stream:
             pcap = dpkt.pcap.Reader(pcap_stream)
-            pcap.loop(self.handle_packet, mobile, prod)
+            pcap.loop(self.handle_packet, mobile, ip_layer)
 
-    def handle_packet(self, ts, buff, mobile=False, prod=False):
-        if prod:
+    def handle_packet(self, ts, buff, mobile=False, ip_layer=False):
+        if ip_layer:
             ip = dpkt.ip.IP(buff)
         else:
             eth = dpkt.ethernet.Ethernet(buff[2:]) if mobile else dpkt.ethernet.Ethernet(buff)

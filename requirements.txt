@@ -1,0 +1,6 @@
+Pygments==2.0.2
+argparse==1.2.1
+dpkt==1.8.6
+requests==2.7.0
+tabletext==0.1
+wsgiref==0.1.2

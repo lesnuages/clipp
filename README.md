@@ -39,7 +39,7 @@ Right now, the available commands are :
 - **help** : list available commands.
 - **set option=value** : change configuration (see Config above), **value** will be 1 or 0.
 - **load <file>** : load and parse a pcap file.
-- **sessions [ <session_id> ]** : list all the TCP/UDP sessions, or enter the **session_id** session.
+- **sessions <session_id>** : list all the TCP/UDP sessions, or enter the **session_id** session.
 - **search [options] <pattern>** : search for a hex or string pattern in all sessions.
 - **stream [options]** : print the current session in the choosen format (**help stream** for more details).
 - **extract -p <pkt_number>** : extract HTTP POST key values data.

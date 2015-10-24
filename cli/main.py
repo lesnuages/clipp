@@ -261,30 +261,11 @@ class ClippConsole(BaseConsole):
             session_dict = session.serialize()
             if colname:
                 if pattern in str(session_dict[colname]):
-                    data.append([key,
-                                session_dict['ip_src'],
-                                session_dict['domainsrc'],
-                                session_dict['sport'],
-                                session_dict['ip_dst'],
-                                session_dict['domaindst'],
-                                session_dict['dport'],
-                                session_dict['proto'],
-                                session_dict['pkts'],
-                                session_dict['tot_len']])
+                    data.append([key] + [session_dict[hkey] for hkey in headers.keys()[1:]])
             else:
-                data.append([key,
-                            session_dict['ip_src'],
-                            session_dict['domainsrc'],
-                            session_dict['sport'],
-                            session_dict['ip_dst'],
-                            session_dict['domaindst'],
-                            session_dict['dport'],
-                            session_dict['proto'],
-                            session_dict['pkts'],
-                            session_dict['tot_len']])
+                data.append([key] + [session_dict[hkey] for hkey in headers.keys()[1:]])
         if len(data) > 0:
             print(to_text([headers.values()] + data))
-        pass
 
     def do_info(self, args):
         if self.current_session:
@@ -459,15 +440,20 @@ class ClippConsole(BaseConsole):
         return self.autocomplete_path(text, args, begidx, endidx)
 
     def complete_sessions(self, text, args, begidx, endidx):
-        return self.autocomplete_session_key(text)
+        return self.autocomplete_session_key(text, args, begidx, endidx)
 
     def complete_stream(self, text, args, begidx, endidx):
         params = ['-f', '-p', '--format', '--packet', 'str', 'json', 'urldecode', 'base64', 'hex', 'hexarray']
         return filter(lambda s: s.startswith(text), params)
 
-    def autocomplete_session_key(self, text):
-        sub_cmds = ['filter']
-        return filter(lambda s: s.startswith(text), self.analyzer.sessions.keys() + sub_cmds)
+    def autocomplete_session_key(self, text, args, begidx, endidx):
+        sub_cmd = 'filter'
+        columns = ['IP_SRC', 'IP_DST', 'PORT_SRC', 'PORT_DST', 'DOMAIN_SRC', 'DOMAIN_DST', 'PROTO', 'LENGTH', 'PACKETS']
+        args = args.split()
+        if sub_cmd in args:
+            return filter(lambda s : s.lower().startswith(text.lower()), columns)
+        else:
+            return filter(lambda s: s.startswith(text), self.analyzer.sessions.keys() + [sub_cmd])
 
 if __name__ == '__main__':
     ClippConsole().cmdloop()

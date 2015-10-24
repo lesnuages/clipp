@@ -6,6 +6,7 @@ import glob
 import cmd
 import subprocess
 import pickle
+from collections                import OrderedDict
 from core.utils                 import SessionFormatter, SearchUtils, format_json
 from tabletext                  import to_text
 from core.analysis.analyzer     import PcapAnalyzer
@@ -222,18 +223,55 @@ class ClippConsole(BaseConsole):
 
     @docopt_cmd
     def do_sessions(self, args):
-        """Usage: sessions [<session_id>]
+        """Usage: sessions [[<session_id>] | [(filter <colname> <pattern>)]]
 
         Print session list, or enter session if <session_id> is given.
+
+        Options:
+
+        filter <colname> <pattern>    only display sessions matching <pattern> in column <colname>
         """
+        headers = OrderedDict([('session_id', 'SESSION_ID'), 
+            ('ip_src', 'IP_SRC'),
+            ('domainsrc', 'DOMAIN_SRC'),
+            ('sport', 'PORT_SRC'),
+            ('ip_dst', 'IP_DST'),
+            ('domaindst', 'DOMAIN_DST'),
+            ('dport', 'PORT_DST'),
+            ('proto', 'PROTO'),
+            ('pkts', 'PACKETS'),
+            ('tot_len', 'LENGTH')])
         if args['<session_id>'] in self.analyzer.sessions.keys():
             self.prompt = Colors.BOLD + Colors.F_BLUE + "clipp[%s]>>" % (args['<session_id>']) + Colors.RESET_ALL
             self.current_session = args['<session_id>']
+        elif args['filter']:
+            colname = args['<colname>']
+            pattern = str(args['<pattern>'])
+            matches = [key for key, value in headers.iteritems() if colname.lower() == value.lower()]
+            if len(matches) == 1 and pattern:
+                self.print_session_table(headers, matches.pop(), pattern)
+            else:
+                self.print_warning("Column {} does not exist.".format(colname))
         else:
-            header = ['Session ID', 'IP SRC', 'DOMAIN SRC', 'PORT SRC', 'IP DST', 'DOMAIN DST' ,'PORT DST', 'PROTO', 'PACKETS', 'LENGTH']
-            data = []
-            for key, session in self.analyzer.sessions.iteritems():
-                session_dict = session.serialize()
+            self.print_session_table(headers)
+
+    def print_session_table(self, headers, colname=None, pattern=None):
+        data = []
+        for key, session in self.analyzer.sessions.iteritems():
+            session_dict = session.serialize()
+            if colname:
+                if pattern in str(session_dict[colname]):
+                    data.append([key,
+                                session_dict['ip_src'],
+                                session_dict['domainsrc'],
+                                session_dict['sport'],
+                                session_dict['ip_dst'],
+                                session_dict['domaindst'],
+                                session_dict['dport'],
+                                session_dict['proto'],
+                                session_dict['pkts'],
+                                session_dict['tot_len']])
+            else:
                 data.append([key,
                             session_dict['ip_src'],
                             session_dict['domainsrc'],
@@ -244,8 +282,9 @@ class ClippConsole(BaseConsole):
                             session_dict['proto'],
                             session_dict['pkts'],
                             session_dict['tot_len']])
-            if len(data) > 0:
-                print(to_text([header] + data))
+        if len(data) > 0:
+            print(to_text([headers.values()] + data))
+        pass
 
     def do_info(self, args):
         if self.current_session:
@@ -420,7 +459,8 @@ class ClippConsole(BaseConsole):
         return self.autocomplete_path(text, args, begidx, endidx)
 
     def complete_sessions(self, text, args, begidx, endidx):
-        return self.autocomplete_session_key(text)
+        results = ['filter']
+        return results + self.autocomplete_session_key(text)
 
     def complete_stream(self, text, args, begidx, endidx):
         params = ['-f', '-p', '--format', '--packet', 'str', 'json', 'urldecode', 'base64', 'hex', 'hexarray']

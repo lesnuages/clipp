@@ -459,15 +459,15 @@ class ClippConsole(BaseConsole):
         return self.autocomplete_path(text, args, begidx, endidx)
 
     def complete_sessions(self, text, args, begidx, endidx):
-        results = ['filter']
-        return results + self.autocomplete_session_key(text)
+        return self.autocomplete_session_key(text)
 
     def complete_stream(self, text, args, begidx, endidx):
         params = ['-f', '-p', '--format', '--packet', 'str', 'json', 'urldecode', 'base64', 'hex', 'hexarray']
         return filter(lambda s: s.startswith(text), params)
 
     def autocomplete_session_key(self, text):
-        return filter(lambda s: s.startswith(text), self.analyzer.sessions.keys())
+        sub_cmds = ['filter']
+        return filter(lambda s: s.startswith(text), self.analyzer.sessions.keys() + sub_cmds)
 
 if __name__ == '__main__':
     ClippConsole().cmdloop()

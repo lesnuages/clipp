@@ -230,14 +230,16 @@ class ClippConsole(BaseConsole):
             self.prompt = Colors.BOLD + Colors.F_BLUE + "clipp[%s]>>" % (args['<session_id>']) + Colors.RESET_ALL
             self.current_session = args['<session_id>']
         else:
-            header = ['Session ID', 'IP SRC', 'PORT SRC', 'IP DST', 'PORT DST', 'PROTO', 'PACKETS', 'LENGTH']
+            header = ['Session ID', 'IP SRC', 'DOMAIN SRC', 'PORT SRC', 'IP DST', 'DOMAIN DST' ,'PORT DST', 'PROTO', 'PACKETS', 'LENGTH']
             data = []
             for key, session in self.analyzer.sessions.iteritems():
                 session_dict = session.serialize()
                 data.append([key,
                             session_dict['ip_src'],
+                            session_dict['domainsrc'],
                             session_dict['sport'],
                             session_dict['ip_dst'],
+                            session_dict['domaindst'],
                             session_dict['dport'],
                             session_dict['proto'],
                             session_dict['pkts'],

@@ -4,6 +4,7 @@ import re
 import dpkt
 import hashlib
 import socket
+import netaddr
 from collections import OrderedDict
 
 # Patch RAW IP PCAP
@@ -28,6 +29,8 @@ class Session:
         self.ip_dst     = kwargs.get('ip_dst', None)
         self.sport      = kwargs.get('sport', None)
         self.dport      = kwargs.get('dport', None)
+        self.domainsrc  = kwargs.get('domainsrc', None)
+        self.domaindst  = kwargs.get('domaindst', None)
         self.packets    = []
 
     def add_packet(self, packet):
@@ -47,6 +50,8 @@ class Session:
                'ip_dst' : self.ip_dst,
                'sport'  : self.sport,
                'dport'  : self.dport,
+               'domainsrc' : self.domainsrc,
+               'domaindst' : self.domaindst,
                'pkts'   : self.nb_pkts,
                'tot_len' : self.tot_len}
 
@@ -54,6 +59,7 @@ class PcapAnalyzer():
 
     def __init__(self):
         self.sessions   = OrderedDict()
+        self.domains    = OrderedDict()
         self.filepath   = None
 
     def set_filepath(self, filepath):
@@ -84,6 +90,7 @@ class PcapAnalyzer():
     def sessionize(self, ip):
         hkey = self.compute_key(ip)
         if hkey:
+            self.get_dns(ip)
             proto = {dpkt.ip.IP_PROTO_TCP: 'TCP', dpkt.ip.IP_PROTO_UDP:'UDP'}[ip.p]
             strings = self.find_strings(ip.data.data)
             packet = Packet(data=ip.data.data, strings=strings, raw=ip)
@@ -94,9 +101,31 @@ class PcapAnalyzer():
                                   ip_src=self.ip_to_str(ip.src),
                                   ip_dst=self.ip_to_str(ip.dst),
                                   sport=ip.data.sport,
-                                  dport=ip.data.dport)
+                                  dport=ip.data.dport,
+                                  domainsrc=self.get_domain(self.ip_to_str(ip.src)),
+                                  domaindst=self.get_domain(self.ip_to_str(ip.dst)))
                 session.add_packet(packet)
                 self.sessions.update({hkey:session})
+
+    def get_dns(self, ipdata):
+        if ipdata.p == dpkt.ip.IP_PROTO_UDP: # check transport layer
+            udp = ipdata.data
+            if udp.sport == 53 or udp.dport == 53: # dumb assumption, udp on port 53 == DNS
+                dns = dpkt.dns.DNS(udp.data)
+                if dns.qr == 1:
+                    try:
+                        for rr in dns.an:
+                            ip_int = int(rr.rdata.encode('hex'), 16)
+                            self.domains.update({netaddr.IPAddress(ip_int).__str__() : rr.name})
+                    except Exception:
+                        pass
+
+    def get_domain(self, ip_str):
+        matches = filter(lambda ip: ip == ip_str, self.domains.keys())
+        if len(matches) == 1:
+            return self.domains[matches.pop()]
+        else:
+            return "No domain found"
 
     def find_strings(self, data):
         return "".join(re.findall(u'(?i)[\b-\r -ÿ]', data))

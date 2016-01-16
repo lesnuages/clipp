@@ -58,4 +58,4 @@ Default values are **0** for both options.
 ### Examples
 
     clipp>>set mobile=1
-    clipp>>set prod=0
+    clipp>>set ip-layer=0
